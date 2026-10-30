@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data including couple preferences and Google account details",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user from Google account"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user"
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "Profile picture URL from Google account"
+        },
+        "girlfriendName": {
+          "type": "string",
+          "description": "Name of the girlfriend"
+        },
+        "girlfriendNickname": {
+          "type": "string",
+          "description": "Romantic nickname of the girlfriend"
+        },
+        "boyfriendName": {
+          "type": "string",
+          "description": "Name of the boyfriend"
+        },
+        "anniversaryTimestamp": {
+          "type": "integer",
+          "description": "Timestamp of anniversary date in milliseconds"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp. Must be server timestamp FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp. Must be server timestamp FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["email", "createdAt", "updatedAt"]
+    },
+    "CustomLoveNote": {
+      "title": "CustomLoveNote",
+      "description": "Personalized love note written for or by the partner",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title or short caption of the note"
+        },
+        "content": {
+          "type": "string",
+          "description": "Romantic message content"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category or tag for the note"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or sender name"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp. Must be server timestamp FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp. Must be server timestamp FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["content", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile and relationship info"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": "CustomLoveNote",
+      "description": "Stores romantic notes authored by the couple"
+    }
+  }
+}

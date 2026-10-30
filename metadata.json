@@ -1,0 +1,6 @@
+{
+  "name": "Amor Diario",
+  "description": "Una app romántica y especial para saludar a tu novia con hermosos mensajes diarios, cartas de amor, contador de aniversarios y frases tiernas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

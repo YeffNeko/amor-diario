@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-android-amordiar-1a8c6604-314f-4792-bf00-a9ec158ac92f",
+      "rules": "firestore.rules"
+    }
+  ]
+}
