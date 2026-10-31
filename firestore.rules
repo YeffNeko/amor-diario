@@ -54,6 +54,14 @@ service cloud.firestore {
       }
     }
 
+    match /couples/{coupleId} {
+      allow read, write: if isAuthenticated();
+
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

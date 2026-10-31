@@ -50,3 +50,15 @@ data class CoupleQuestionAnswerEntity(
     val answeredAtTimestamp: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "couple_chat_messages")
+data class LoveChatMessageEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val senderName: String,
+    val isSenderMe: Boolean = true,
+    val messageText: String,
+    val stickerEmoji: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val hasHeartReaction: Boolean = false
+)
+

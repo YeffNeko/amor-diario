@@ -60,16 +60,62 @@ fun LoveJarScreen(
 ) {
     val profile by viewModel.profile.collectAsState()
     var kissesSent by remember { mutableIntStateOf(100) }
+    var activeSubTab by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val jarScale = remember { Animatable(1f) }
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp)
-            .testTag("love_jar_screen"),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
+    Column(modifier = modifier.fillMaxSize()) {
+        Surface(
+            tonalElevation = 2.dp,
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (activeSubTab == 0) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    modifier = Modifier.clickable { activeSubTab = 0 }
+                ) {
+                    Text(
+                        text = "🍯 El Frasco Mágico",
+                        fontWeight = if (activeSubTab == 0) FontWeight.Bold else FontWeight.Normal,
+                        color = if (activeSubTab == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        fontSize = 14.sp
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (activeSubTab == 1) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                    modifier = Modifier.clickable { activeSubTab = 1 }
+                ) {
+                    Text(
+                        text = "💕 Nuestra Historia",
+                        fontWeight = if (activeSubTab == 1) FontWeight.Bold else FontWeight.Normal,
+                        color = if (activeSubTab == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        }
+
+        if (activeSubTab == 1) {
+            OurStoryScreen(viewModel = viewModel)
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+                    .testTag("love_jar_screen"),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
         item {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -293,5 +339,7 @@ fun LoveJarScreen(
         }
 
         item { Spacer(modifier = Modifier.height(24.dp)) }
+        }
     }
+}
 }

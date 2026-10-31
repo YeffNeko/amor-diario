@@ -53,4 +53,17 @@ interface LoveDao {
 
     @Query("DELETE FROM couple_question_answers WHERE questionId = :questionId")
     suspend fun deleteQuestionAnswer(questionId: String)
+
+    // Couple Chat System
+    @Query("SELECT * FROM couple_chat_messages ORDER BY timestamp ASC")
+    fun getAllChatMessages(): Flow<List<LoveChatMessageEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChatMessage(message: LoveChatMessageEntity): Long
+
+    @Query("UPDATE couple_chat_messages SET hasHeartReaction = :hasHeart WHERE id = :id")
+    suspend fun toggleChatReaction(id: Long, hasHeart: Boolean)
+
+    @Query("DELETE FROM couple_chat_messages WHERE id = :id")
+    suspend fun deleteChatMessage(id: Long)
 }

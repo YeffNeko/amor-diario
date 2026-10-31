@@ -35,8 +35,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
@@ -77,6 +80,7 @@ import com.example.data.LoveCategory
 import com.example.data.LoveMessage
 import com.example.data.LoveMessagesRepository
 import com.example.ui.LoveViewModel
+import com.example.ui.components.CouplePetCard
 import com.example.ui.components.GoogleAuthCard
 
 @Composable
@@ -93,6 +97,10 @@ fun HomeScreen(
     val currentQuestion by viewModel.currentQuestion.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     val authState by viewModel.authUiState.collectAsState()
+    val pet by viewModel.pet.collectAsState()
+    val linkInfo by viewModel.coupleLinkInfo.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsState()
+    val stats = viewModel.getRelationshipStats()
 
     val formattedBody = viewModel.formatText(featuredMessage.text, profile)
     val formattedSign = viewModel.formatText(featuredMessage.signOff, profile)
@@ -140,21 +148,72 @@ fun HomeScreen(
                     )
             )
 
-            // Settings button
-            IconButton(
-                onClick = { viewModel.setSettingsDialogVisible(true) },
+            // Action buttons row (Cupido AI, Link ID, Settings)
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 12.dp, end = 12.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.35f))
-                    .testTag("open_settings_button")
+                    .padding(top = 12.dp, end = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Configuración",
-                    tint = Color.White
-                )
+                // Cupido AI Button
+                IconButton(
+                    onClick = { viewModel.setCupidoAiVisible(true) },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .testTag("open_cupido_ai_home")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "Cupido AI",
+                        tint = Color(0xFFFFD54F)
+                    )
+                }
+
+                // Couple Link Button
+                IconButton(
+                    onClick = { viewModel.setCoupleLinkVisible(true) },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .testTag("open_couple_link_home")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Link,
+                        contentDescription = "Vincular Pareja",
+                        tint = Color.White
+                    )
+                }
+
+                // Theme Toggle Button (Light/Dark Mode)
+                IconButton(
+                    onClick = { viewModel.toggleDarkMode() },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .testTag("toggle_dark_mode_home")
+                ) {
+                    Icon(
+                        imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                        contentDescription = "Cambiar Fondo",
+                        tint = if (isDarkMode) Color(0xFFFFD54F) else Color.White
+                    )
+                }
+
+                // Settings button
+                IconButton(
+                    onClick = { viewModel.setSettingsDialogVisible(true) },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .testTag("open_settings_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Configuración",
+                        tint = Color.White
+                    )
+                }
             }
 
             // Top greeting text
@@ -227,6 +286,119 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Live Love Counter Card (Tiempo Juntos en Vivo)
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .testTag("live_love_counter_card")
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFFE91E63), modifier = Modifier.size(18.dp))
+                        Text(
+                            text = "TIEMPO JUNTOS",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = 1.sp
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (linkInfo.isLinked) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        modifier = Modifier.clickable { viewModel.setCoupleLinkVisible(true) }
+                    ) {
+                        Text(
+                            text = if (linkInfo.isLinked) "🟢 Vinculados" else "🔗 ID: ${linkInfo.myLoveId}",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (linkInfo.isLinked) Color(0xFF1B5E20) else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    if (stats.years > 0) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${stats.years}",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(text = if (stats.years == 1) "Año" else "Años", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${stats.months}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(text = if (stats.months == 1) "Mes" else "Meses", style = MaterialTheme.typography.labelSmall)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${stats.totalDays}",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(text = "Días Totales", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Próximo aniversario en ${stats.daysUntilNextAnniversary} días 🎉 (${stats.anniversaryFormatted})",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Nuestra Mascota de Pareja
+        Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+            CouplePetCard(
+                pet = pet,
+                coupleNames = "${profile.boyfriendName} & ${profile.girlfriendNickname}",
+                onInteract = { viewModel.interactWithPet(it) },
+                onCustomize = { animal, name, outfit ->
+                    viewModel.customizePet(animal, name, outfit)
+                }
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))

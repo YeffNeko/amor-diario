@@ -67,6 +67,8 @@ fun SettingsDialog(
     currentProfile: LoveProfile,
     currentUser: FirebaseUser? = null,
     authState: AuthUiState = AuthUiState.Idle,
+    isDarkMode: Boolean = false,
+    onToggleDarkMode: () -> Unit = {},
     onSignInWithGoogle: () -> Unit = {},
     onSignOutGoogle: () -> Unit = {},
     onClearAuthError: () -> Unit = {},
@@ -253,6 +255,39 @@ fun SettingsDialog(
                 }
 
                 Spacer(modifier = Modifier.height(18.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                // APPEARANCE SECTION
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Modo Oscuro Romántico 🌙",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = if (isDarkMode) "Fondo obsidiana con destellos dorados" else "Fondo claro con gradiente rosa pastel",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = { onToggleDarkMode() },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        modifier = Modifier.testTag("toggle_dark_mode_settings")
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                 Spacer(modifier = Modifier.height(14.dp))
 

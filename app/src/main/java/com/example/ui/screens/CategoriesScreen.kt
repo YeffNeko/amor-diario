@@ -7,6 +7,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -163,6 +165,13 @@ fun CategoriesScreen(
                             putExtra(Intent.EXTRA_TEXT, textToSend)
                         }
                         context.startActivity(Intent.createChooser(shareIntent, "Enviar a ${profile.girlfriendName}"))
+                    },
+                    onSendToChat = {
+                        val formatted = viewModel.formatText(message.text, profile)
+                        val formattedSign = viewModel.formatText(message.signOff, profile)
+                        val letterPayload = "[CARTA_ROMANTICA]: ${message.title}\n\n$formatted\n\n~ $formattedSign"
+                        viewModel.sendChatMessage(letterPayload, isMe = true)
+                        Toast.makeText(context, "¡Carta enviada al Chat de Pareja! 💌", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -181,7 +190,8 @@ fun MessageItemCard(
     onToggleFavorite: () -> Unit,
     onOpenCard: () -> Unit,
     onCopy: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    onSendToChat: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -291,6 +301,18 @@ fun MessageItemCard(
                         imageVector = Icons.Default.Share,
                         contentDescription = "Compartir",
                         tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onSendToChat,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = "Enviar al Chat",
+                        tint = Color(0xFFE91E63),
                         modifier = Modifier.size(20.dp)
                     )
                 }

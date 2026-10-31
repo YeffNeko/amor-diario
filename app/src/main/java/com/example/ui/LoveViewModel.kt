@@ -54,6 +54,16 @@ class LoveViewModel(application: Application) : AndroidViewModel(application) {
     val authUiState: StateFlow<AuthUiState> = authManager.uiState
 
     val profile: StateFlow<LoveProfile> = preferences.profileFlow
+    val coupleLinkInfo: StateFlow<com.example.data.CoupleLinkInfo> = preferences.coupleLinkFlow
+    val isDarkMode: StateFlow<Boolean> = preferences.isDarkModeFlow
+
+    private val _showCupidoAiDialog = MutableStateFlow(false)
+    val showCupidoAiDialog: StateFlow<Boolean> = _showCupidoAiDialog.asStateFlow()
+
+    private val _showCoupleLinkDialog = MutableStateFlow(false)
+    val showCoupleLinkDialog: StateFlow<Boolean> = _showCoupleLinkDialog.asStateFlow()
+
+    private var coupleChatListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     init {
         com.example.notifications.LoveNotificationManager.createNotificationChannel(application)
@@ -74,7 +84,77 @@ class LoveViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+
+        // Real-time Firestore sync for couple messages when linked
+        viewModelScope.launch {
+            coupleLinkInfo.collect { link ->
+                coupleChatListener?.remove()
+                if (link.isLinked && !link.partnerLoveId.isNullOrBlank()) {
+                    val coupleId = cloudSyncRepository.computeCoupleId(link.myLoveId, link.partnerLoveId)
+                    coupleChatListener = cloudSyncRepository.listenToCoupleMessages(coupleId) { cloudMsgs ->
+                        viewModelScope.launch {
+                            cloudMsgs.forEach { map ->
+                                val senderId = map["senderId"] as? String ?: ""
+                                val senderName = map["senderName"] as? String ?: "Mi Pareja"
+                                val text = map["messageText"] as? String ?: ""
+                                val sticker = map["stickerEmoji"] as? String ?: ""
+                                val isMe = (senderId == link.myLoveId)
+
+                                if (!isMe && (text.isNotBlank() || sticker.isNotBlank())) {
+                                    val currentList = chatMessages.value
+                                    val exists = currentList.any { it.messageText == text && !it.isSenderMe }
+                                    if (!exists) {
+                                        dao.insertChatMessage(
+                                            com.example.data.LoveChatMessageEntity(
+                                                senderName = senderName,
+                                                isSenderMe = false,
+                                                messageText = text,
+                                                stickerEmoji = sticker,
+                                                timestamp = System.currentTimeMillis()
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Seed initial couple chat if empty
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(400)
+            if (chatMessages.value.isEmpty()) {
+                val now = System.currentTimeMillis()
+                dao.insertChatMessage(
+                    com.example.data.LoveChatMessageEntity(
+                        senderName = profile.value.boyfriendName.ifBlank { "Tú" },
+                        isSenderMe = true,
+                        messageText = "¡Hola mi amor! Cada día a tu lado es un regalo hermoso ✨",
+                        stickerEmoji = "🥰",
+                        timestamp = now - 1800000,
+                        hasHeartReaction = true
+                    )
+                )
+                dao.insertChatMessage(
+                    com.example.data.LoveChatMessageEntity(
+                        senderName = profile.value.girlfriendName.ifBlank { "Mi Pareja" },
+                        isSenderMe = false,
+                        messageText = "¡Te amo infinito! Gracias por hacerme tan feliz 💕",
+                        stickerEmoji = "💌",
+                        timestamp = now - 900000,
+                        hasHeartReaction = true
+                    )
+                )
+            }
+        }
     }
+
+    val pet: StateFlow<com.example.data.CouplePet> = preferences.petFlow
+
+    val chatMessages: StateFlow<List<com.example.data.LoveChatMessageEntity>> = dao.getAllChatMessages()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val favorites: StateFlow<List<FavoriteEntity>> = dao.getAllFavorites()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -366,6 +446,101 @@ class LoveViewModel(application: Application) : AndroidViewModel(application) {
     fun sendTestNotification() {
         com.example.notifications.LoveNotificationManager.showLoveNotification(getApplication())
         triggerHearts()
+    }
+
+    // Pet Interactions
+    fun interactWithPet(type: String) {
+        preferences.petInteraction(type)
+        triggerHearts()
+    }
+
+    fun customizePet(animal: String, name: String, outfit: String) {
+        preferences.updatePetCustomization(animal, name, outfit)
+        triggerHearts()
+    }
+
+    // Chat Operations
+    fun sendChatMessage(text: String, isMe: Boolean = true, sticker: String = "") {
+        if (text.isBlank() && sticker.isBlank()) return
+        val sender = if (isMe) {
+            profile.value.boyfriendName.ifBlank { "Tú" }
+        } else {
+            profile.value.girlfriendName.ifBlank { "Mi Pareja" }
+        }
+        viewModelScope.launch {
+            dao.insertChatMessage(
+                com.example.data.LoveChatMessageEntity(
+                    senderName = sender,
+                    isSenderMe = isMe,
+                    messageText = text.trim(),
+                    stickerEmoji = sticker
+                )
+            )
+
+            // Send to cloud if linked
+            val link = coupleLinkInfo.value
+            if (link.isLinked && !link.partnerLoveId.isNullOrBlank()) {
+                val coupleId = cloudSyncRepository.computeCoupleId(link.myLoveId, link.partnerLoveId)
+                cloudSyncRepository.sendCoupleMessageToCloud(
+                    coupleId = coupleId,
+                    senderId = if (isMe) link.myLoveId else (link.partnerLoveId ?: "partner"),
+                    senderName = sender,
+                    messageText = text.trim(),
+                    stickerEmoji = sticker
+                )
+            }
+            triggerHearts()
+        }
+    }
+
+    fun linkPartner(partnerId: String): Boolean {
+        val success = preferences.linkPartner(partnerId)
+        if (success) {
+            triggerHearts()
+        }
+        return success
+    }
+
+    fun unlinkPartner() {
+        coupleChatListener?.remove()
+        coupleChatListener = null
+        preferences.unlinkPartner()
+    }
+
+    fun setCupidoAiVisible(visible: Boolean) {
+        _showCupidoAiDialog.value = visible
+    }
+
+    fun setCoupleLinkVisible(visible: Boolean) {
+        _showCoupleLinkDialog.value = visible
+    }
+
+    fun toggleDarkMode(): Boolean {
+        val next = preferences.toggleDarkMode()
+        triggerHearts()
+        return next
+    }
+
+    fun setDarkMode(enabled: Boolean) {
+        preferences.setDarkMode(enabled)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        coupleChatListener?.remove()
+        coupleChatListener = null
+    }
+
+    fun toggleChatMessageReaction(id: Long, currentHasHeart: Boolean) {
+        viewModelScope.launch {
+            dao.toggleChatReaction(id, !currentHasHeart)
+        }
+    }
+
+    fun deleteChatMessage(id: Long) {
+        viewModelScope.launch {
+            dao.deleteChatMessage(id)
+        }
     }
 
     fun formatText(raw: String, prof: LoveProfile = profile.value): String {

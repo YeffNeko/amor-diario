@@ -10,9 +10,10 @@ import androidx.room.RoomDatabase
         FavoriteEntity::class,
         CustomNoteEntity::class,
         CoupleMilestoneEntity::class,
-        CoupleQuestionAnswerEntity::class
+        CoupleQuestionAnswerEntity::class,
+        LoveChatMessageEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class LoveDatabase : RoomDatabase() {

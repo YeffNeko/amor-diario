@@ -84,4 +84,60 @@ class LoveCloudSyncRepository(
             Result.failure(e)
         }
     }
+
+    fun computeCoupleId(myId: String, partnerId: String): String {
+        return if (myId <= partnerId) "${myId}_${partnerId}" else "${partnerId}_${myId}"
+    }
+
+    suspend fun sendCoupleMessageToCloud(
+        coupleId: String,
+        senderId: String,
+        senderName: String,
+        messageText: String,
+        stickerEmoji: String?
+    ): Result<String> {
+        return try {
+            val msgData = hashMapOf<String, Any>(
+                "senderId" to senderId,
+                "senderName" to senderName,
+                "messageText" to messageText,
+                "stickerEmoji" to (stickerEmoji ?: ""),
+                "hasHeartReaction" to false,
+                "timestamp" to FieldValue.serverTimestamp()
+            )
+            val docRef = db.collection("couples")
+                .document(coupleId)
+                .collection("messages")
+                .add(msgData)
+                .await()
+            Log.d(TAG, "Mensaje enviado a la nube en pareja $coupleId doc: ${docRef.id}")
+            Result.success(docRef.id)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al enviar mensaje a la nube", e)
+            Result.failure(e)
+        }
+    }
+
+    fun listenToCoupleMessages(
+        coupleId: String,
+        onMessagesReceived: (List<Map<String, Any>>) -> Unit
+    ): com.google.firebase.firestore.ListenerRegistration {
+        return db.collection("couples")
+            .document(coupleId)
+            .collection("messages")
+            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING)
+            .limit(100)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e(TAG, "Error escuchando mensajes de pareja", error)
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val messages = snapshot.documents.mapNotNull { doc ->
+                        doc.data?.plus("cloudId" to doc.id)
+                    }
+                    onMessagesReceived(messages)
+                }
+            }
+    }
 }

@@ -16,13 +16,17 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -40,14 +44,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
 import com.example.ui.LoveViewModel
-import com.example.ui.components.FloatingHeartsEffect
+import com.example.ui.components.CoupleLinkDialog
 import com.example.ui.components.CoupleQuestionsDialog
+import com.example.ui.components.CupidoAiDialog
+import com.example.ui.components.FloatingHeartsEffect
 import com.example.ui.components.LoveCardDialog
 import com.example.ui.components.LoveCouponDialog
 import com.example.ui.components.LoveLetterDialog
+import com.example.ui.components.RomanticBackground
 import com.example.ui.components.SettingsDialog
 import com.example.ui.screens.CategoriesScreen
+import com.example.ui.screens.CoupleChatScreen
+import com.example.ui.screens.CoupleGamesScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LoveJarScreen
 import com.example.ui.screens.OurStoryScreen
@@ -61,9 +71,10 @@ enum class LoveNavTab(
     val unselectedIcon: ImageVector
 ) {
     HOME("Inicio", Icons.Filled.Home, Icons.Outlined.Home),
-    MESSAGES("Mensajes", Icons.Filled.MenuBook, Icons.Outlined.MenuBook),
-    JAR("El Frasco", Icons.Filled.CardGiftcard, Icons.Outlined.CardGiftcard),
-    OUR_STORY("Nosotros", Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder)
+    CHAT("Chat", Icons.Filled.ChatBubble, Icons.Outlined.ChatBubbleOutline),
+    GAMES("Juegos", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports),
+    MESSAGES("Cartas", Icons.Filled.MenuBook, Icons.Outlined.MenuBook),
+    JAR("El Frasco", Icons.Filled.CardGiftcard, Icons.Outlined.CardGiftcard)
 }
 
 class MainActivity : ComponentActivity() {
@@ -92,26 +103,32 @@ fun LoveApp(viewModel: LoveViewModel) {
     val activeLetter by viewModel.activeLetter.collectAsState()
     val showQuestionsHub by viewModel.showQuestionsHub.collectAsState()
     val profile by viewModel.profile.collectAsState()
+    val showCupidoAi by viewModel.showCupidoAiDialog.collectAsState()
+    val showCoupleLink by viewModel.showCoupleLinkDialog.collectAsState()
+    val coupleLinkInfo by viewModel.coupleLinkInfo.collectAsState()
+    val isDarkMode by viewModel.isDarkMode.collectAsState()
 
     BackHandler(enabled = currentTab != LoveNavTab.HOME) {
         currentTab = LoveNavTab.HOME
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            contentWindowInsets = WindowInsets.safeDrawing,
-            bottomBar = {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 3.dp,
-                    windowInsets = WindowInsets.navigationBars,
-                    modifier = Modifier.testTag("main_bottom_nav")
-                ) {
-                    LoveNavTab.values().forEach { tab ->
-                        val isSelected = currentTab == tab
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = { currentTab = tab },
+    RomanticBackground(isDark = isDarkMode, modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                containerColor = Color.Transparent,
+                contentWindowInsets = WindowInsets.safeDrawing,
+                bottomBar = {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                        tonalElevation = 3.dp,
+                        windowInsets = WindowInsets.navigationBars,
+                        modifier = Modifier.testTag("main_bottom_nav")
+                    ) {
+                        LoveNavTab.values().forEach { tab ->
+                            val isSelected = currentTab == tab
+                            NavigationBarItem(
+                                selected = isSelected,
+                                onClick = { currentTab = tab },
                             icon = {
                                 Icon(
                                     imageVector = if (isSelected) tab.selectedIcon else tab.unselectedIcon,
@@ -149,13 +166,16 @@ fun LoveApp(viewModel: LoveViewModel) {
                             currentTab = LoveNavTab.MESSAGES
                         }
                     )
+                    LoveNavTab.CHAT -> CoupleChatScreen(
+                        viewModel = viewModel
+                    )
+                    LoveNavTab.GAMES -> CoupleGamesScreen(
+                        viewModel = viewModel
+                    )
                     LoveNavTab.MESSAGES -> CategoriesScreen(
                         viewModel = viewModel
                     )
                     LoveNavTab.JAR -> LoveJarScreen(
-                        viewModel = viewModel
-                    )
-                    LoveNavTab.OUR_STORY -> OurStoryScreen(
                         viewModel = viewModel
                     )
                 }
@@ -205,6 +225,8 @@ fun LoveApp(viewModel: LoveViewModel) {
                 currentProfile = profile,
                 currentUser = currentUser,
                 authState = authState,
+                isDarkMode = isDarkMode,
+                onToggleDarkMode = { viewModel.toggleDarkMode() },
                 onSignInWithGoogle = { viewModel.signInWithGoogle() },
                 onSignOutGoogle = { viewModel.signOut() },
                 onClearAuthError = { viewModel.clearAuthError() },
@@ -228,5 +250,31 @@ fun LoveApp(viewModel: LoveViewModel) {
                 onDismiss = { viewModel.setQuestionsHubVisible(false) }
             )
         }
+
+        // Cupido AI Dialog
+        if (showCupidoAi) {
+            CupidoAiDialog(
+                profile = profile,
+                onSendToChat = { text ->
+                    viewModel.sendChatMessage(text, isMe = true)
+                },
+                onDismiss = { viewModel.setCupidoAiVisible(false) }
+            )
+        }
+
+        // Couple Link Dialog
+        if (showCoupleLink) {
+            CoupleLinkDialog(
+                linkInfo = coupleLinkInfo,
+                onLinkPartner = { partnerId ->
+                    viewModel.linkPartner(partnerId)
+                },
+                onUnlinkPartner = {
+                    viewModel.unlinkPartner()
+                },
+                onDismiss = { viewModel.setCoupleLinkVisible(false) }
+            )
+        }
     }
+}
 }

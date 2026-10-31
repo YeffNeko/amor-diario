@@ -79,6 +79,20 @@
         }
       },
       "required": ["content", "createdAt", "updatedAt"]
+    },
+    "CoupleMessage": {
+      "title": "CoupleMessage",
+      "description": "Real-time private couple message",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "messageText": { "type": "string" },
+        "stickerEmoji": { "type": "string" },
+        "hasHeartReaction": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "senderName", "timestamp"]
     }
   },
   "firestore": {
@@ -89,6 +103,10 @@
     "/users/{userId}/notes/{noteId}": {
       "schema": "CustomLoveNote",
       "description": "Stores romantic notes authored by the couple"
+    },
+    "/couples/{coupleId}/messages/{messageId}": {
+      "schema": "CoupleMessage",
+      "description": "Real-time private messages between paired partners"
     }
   }
 }

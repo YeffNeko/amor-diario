@@ -1,6 +1,6 @@
 {
   "name": "Amor Diario",
-  "description": "Una app romántica y especial para saludar a tu novia con hermosos mensajes diarios, cartas de amor, contador de aniversarios y frases tiernas.",
+  "description": "App romántica para parejas: vinculación con ID/código de amor, chat privado en tiempo real sincronizado en la nube, Cupido AI para cartas y citas, fondo dinámico ambiental, 6 mini juegos y mascota virtual personalizable.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
